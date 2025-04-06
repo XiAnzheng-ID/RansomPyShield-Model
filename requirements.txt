@@ -1,0 +1,6 @@
+pefile
+pandas
+tqdm
+yara
+scikit-learn
+matplotlib
