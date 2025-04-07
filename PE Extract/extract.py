@@ -47,16 +47,18 @@ def scan_with_yara(file_path, yara_rules):
     if not yara_rules:
         result = {label: 0 for label in YARA_LABEL_MAPPING.values()}
         result["yara_match_count"] = 0
+        result["yara_rule_names_matched"] = ""
         return result
 
     try:
         matches = yara_rules.match(file_path)
         matched_labels = set()
-        matched_rule_names = []  # ← nama-nama rule yang match
+        matched_rule_names = []  # Rule name that Match (WIP)
         yara_match_count = len(matches)
 
+        # get the rule name that match (WIP)
         for match in matches:
-            matched_rule_names.append(match.rule)  # ← ambil nama rule-nya
+            matched_rule_names.append(match.rule)  
             namespace = match.namespace
             if namespace in YARA_LABEL_MAPPING:
                 matched_labels.add(YARA_LABEL_MAPPING[namespace])
@@ -66,15 +68,17 @@ def scan_with_yara(file_path, yara_rules):
             result[label] = 1 if label in matched_labels else 0
 
         result["yara_match_count"] = yara_match_count
+        result["yara_rule_names_matched"] = ", ".join(matched_rule_names)
         return result
 
     except Exception as e:
         print(f"[YARA Error] {file_path}: {e}")
         result = {label: 0 for label in YARA_LABEL_MAPPING.values()}
         result["yara_match_count"] = 0
+        result["yara_rule_names_matched"] = ""
         return result
 
-def extract_capa_capabilities(file_path, capa_path="capa.exe", timeout_sec=60):
+def extract_capa_capabilities(file_path, capa_path="capa.exe", timeout_sec=60): #WIP
     try:
         result = subprocess.run(
             [capa_path, file_path],
@@ -114,7 +118,7 @@ def extract_capa_capabilities(file_path, capa_path="capa.exe", timeout_sec=60):
         print(f"[Error ] Capa: {e}")
         return "Error capa"
 
-def extract_blint_findings(file_path, blint_path="blint", timeout_sec=60):
+def extract_blint_findings(file_path, blint_path="blint", timeout_sec=60): #WIP
     try:
         result = subprocess.run(
             [blint_path, "sbom", "--stdout", "-i", file_path],
@@ -185,6 +189,7 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
         section_entropies = [section.get_entropy() for section in pe.sections]
 
         features["unique_section_names"] = unique_section_count
+        features["section_entropies"] = ", ".join(map(str, section_entropies))
         features["max_entropy"] = max(section_entropies) if section_entropies else 0
         features["min_entropy"] = min(section_entropies) if section_entropies else 0
         features["mean_entropy"] = sum(section_entropies) / len(section_entropies) if section_entropies else 0
@@ -197,6 +202,7 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
 
         features["imported_dll_count"] = len(imported_dlls)
         features["imported_function_count"] = len(imported_functions)
+        features["imported_dlls"] = ", ".join(imported_dlls)
 
         exported_functions = []
         if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
@@ -204,7 +210,6 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
                 exported_functions.append(exp.name.decode(errors='ignore'))
 
         features["exported_function_count"] = len(exported_functions)
-
 
         pe.close()
         return features
@@ -231,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument("--ransomware", help="Malware Sample Directory", required=True)
     parser.add_argument("--benign", help="Benign Sample Directory", required=True)
     parser.add_argument("-output", help="Define CSV filename (Default: output.csv)", default="output.csv")
-    parser.add_argument("--yara_rules", help="YARA rules Directory", default=None, required=True)
+    parser.add_argument("--yara_rules", help="YARA rules Directory (Optional)", default=None)
     parser.add_argument("--capa", nargs="?", const="default", help="Path to capa.exe (If used without value, uses ./capa.exe)")
     parser.add_argument("--blint", nargs="?", const="default", help="Path to blint.exe (If used without value, uses ./blint.exe)")
 
@@ -240,7 +245,9 @@ if __name__ == "__main__":
     if args.capa == "default":
         args.capa = os.path.join(os.getcwd(), "capa.exe")
         print("[INFO] CAPA is enabled. Path:", args.capa)
-        print("[INFO] CAPA option will slowdown the process, please be patient")
+        print("[INFO] This option will slowdown the process, please be patient")
+        print("[INFO] Not Recommended on a Large Dataset if you have less than 24GB Memory")
+
     elif args.capa is None:
         print("[INFO] Capa is Disabled.")
     else:
@@ -249,9 +256,8 @@ if __name__ == "__main__":
     if args.blint == "default":
         args.blint = os.path.join(os.getcwd(), "blint.exe")
         print("[INFO] blint is enabled. Path:", args.blint)
-        print("[INFO] Blint option will slowdown the process, please be patient")
     elif args.blint is None:
-        print("[INFO] Blint is Disabled.")
+        print("[INFO] Blint not used.")
     else:
         print(f"[INFO] Using custom blint path: {args.blint}")
     
