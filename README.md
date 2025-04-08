@@ -9,7 +9,7 @@ Not just that these tools can also help extract the data that taking much time t
 
 as a bonus this model also can detect some other random malware because how Ransomware file works almost the same with most Malware out there
 
-so does it doest have weakness? good question , it does, some threat actor can bypass it using some fileless attack vector eg:CMD/Powershell attack, which we need different approach not Static Identification
+so it doest have weakness? good question , it does, some threat actor can bypass it using some fileless attack vector eg:CMD/Powershell attack, which we need different approach not Static Identification
 
 # How to use?
 * extract.py
