@@ -1,5 +1,5 @@
 # RansomPyShield-Model
-Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint(WIP) for its indicator , not just static PE Information from lief/pefile/other
+Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint for its indicator , not just static PE Information from lief/pefile/other
 
 Why?? Some Malware can spoof , hide , encrypt , obfus most of their data making extracting them hard, some Model or even bad AV can be bypassed or be fooled using this way
 
