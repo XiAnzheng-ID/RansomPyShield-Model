@@ -1,5 +1,5 @@
 # RansomPyShield-Model
-Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint(WIP) for its indicator , not just static PE Information from lief/pefile/other
+Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint for its indicator , not just static PE Information from lief/pefile/other
 
 Why?? Some Malware can spoof , hide , encrypt , obfus most of their data making extracting them hard, some Model or even bad AV can be bypassed or be fooled using this way
 
@@ -28,17 +28,15 @@ run.py --folder "E:\Dataset\Random\Malware" --model "ransompyshield.pkl" --yara_
 ```
 
 # Proof & Information
-This model as tested against 64 random malware and 64 benign file and Trained with 800 real Ransomware Sample and Benign File
-
-and i forgot to keep some dataset as testing so as of now , this model was tested against 16 real Ransomware Sample
-
-Do remember that somefile were failed to be processed so it can be less (check the proof and dataset)
-
-* Random Malware proof
+This model as of now is tested against 100+ real Ransomware Sample and 100+ benign file 
+Trained with 1000+ real Ransomware Sample and Benign File(2000 sample in total)
+Do remember that some file were failed to be processed so it can be less (check the dataset)
+These Proof are old (I might update it later - when i think the model is ready)
+* Random Malware proof (Old)
 <img src="https://github.com/XiAnzheng-ID/RansomPyShield-Model/blob/main/Proof/Accuray_Random_Malware.png" width="512" height="256">
 
-* Random Benign proof
+* Random Benign proof (Old)
 <img src="https://github.com/XiAnzheng-ID/RansomPyShield-Model/blob/main/Proof/Accuray_Random_Benign.png" width="512" height="256">
 
-* Real Ransomware Sample Proof
+* Real Ransomware Sample Proof (Old)
 <img src="https://github.com/XiAnzheng-ID/RansomPyShield-Model/blob/main/Proof/Accuracy_Ransomware_Sample.png" width="512" height="256">
