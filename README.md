@@ -9,12 +9,12 @@ Not just that these tools can also help extract the data that taking much time t
 
 as a bonus this model also can detect some other random malware because how Ransomware file works almost the same with most Malware out there
 
-so does it doest have weakness? good question , it does, some threat actor can bypass it using some fileless attack vector eg:CMD/Powershell attack, which we need different approach not Static Identification
+so it doest have weakness? good question , it does, some threat actor can bypass it using some fileless attack vector eg:CMD/Powershell attack, which we need different approach not Static Identification
 
 # How to use?
 * extract.py
 ```bash
-extract.py --ransomware "C:\path\to\sample" --benign "C:\path\to\benign" --yara_rules "C:\path\to\yara_rules" --capa "C:\path\to\capa.exe" --blint "C:\path\to\blint.exe"
+extract.py --ransomware "C:\path\to\sample" --benign "C:\path\to\benign" --yara_rules "C:\path\to\yara_rules" --blint "C:\path\to\blint.exe"
 ```
 capa and blint is an optional argumen if you dont wanna use em as em still (WIP) , but if you wanna make your own model feel free to use it as it is rn
 
@@ -24,7 +24,7 @@ just run it as a normal script
 * run.py (for running the model and test the 
 accuracy)
 ```bash
-run.py --folder "E:\Dataset\Random\Malware" --model "ransompyshield.pkl" --yara_rules "D:\Kuliah\Code\Skripsi\Rule --label benign/ransomware
+run.py --folder "E:\Dataset\Random\Malware" --model "ransompyshield.pkl" --yara_rules "D:\Kuliah\Code\Skripsi\Rule --blint --label benign/ransomware
 ```
 
 # Proof & Information
