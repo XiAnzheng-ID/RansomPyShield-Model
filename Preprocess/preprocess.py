@@ -1,7 +1,5 @@
 import pandas as pd
 
-import pandas as pd
-
 def preprocess_blint(csv_path, output_path="preprocessed_output.csv"):
     df = pd.read_csv(csv_path)
 
@@ -24,9 +22,10 @@ def preprocess_blint(csv_path, output_path="preprocessed_output.csv"):
 
     # Drop the unused parsed flags (Change as you need)
     columns_to_drop = [
-        'imagebase',
+        'imported_dlls',
         'blint_dll',
         'blint_blint_error',
+        'blint_blint_timeout',
         'blint_executable_image',
         'blint_need_32bit_machine',
         'blint_force_integrity',
@@ -39,6 +38,11 @@ def preprocess_blint(csv_path, output_path="preprocessed_output.csv"):
         'blint_removable_run_from_swap',
         'blint_terminal_server_aware',
         'blint_dynamic_base',
+        'blint_wdm_driver',
+        'blint_local_syms_stripped',
+        'blint_line_nums_stripped',
+        'blint_debug_stripped',
+        'blint_relocs_stripped',
     ]
     df.drop(columns=[col for col in columns_to_drop if col in df.columns], inplace=True)
     df.drop(columns=['blint_findings'], inplace=True)
