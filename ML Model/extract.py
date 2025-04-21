@@ -19,15 +19,15 @@ COMMON_SECTION_NAMES = {
 
 # Mapping namespace to label from yara file name provided by user
 YARA_LABEL_MAPPING = {
-    "BitcoinAddress.yar": "contain_bitcoin_address",
+    "CryptoAddress.yar": "contain_crypto_address",
     "INDICATOR_KNOWN_PACKER.yar": "is_packed",
     "INDICATOR_SUSPICIOUS_GENRansomware.yar": "ransomware_command_indicator",
     "INDICATOR_SUSPICIOUS_MALWARE.yar": "suspicious_technique_indicator",
-    "MoneroAddress.yar": "contain_monero_address",
-    "OnionAddress.yar": "contain_onion_address",
+    "OnionAddress.yar": "contain_tor_link",
     "RansomPyShield.yar": "using_encryption_library",
     "RANSOMWARE_Custom.yar": "ransomware_string_indicator",
     "Sus_Obf_Enc_Spoof_Hide_PE.yar": "suspicious_entropy_and_indicator",
+    "AntiDebug.yar": "Check_for_Debugger",
 }
 
 def load_yara_rules(yara_dir):
@@ -47,18 +47,16 @@ def scan_with_yara(file_path, yara_rules):
     if not yara_rules:
         result = {label: 0 for label in YARA_LABEL_MAPPING.values()}
         result["yara_match_count"] = 0
-        result["yara_rule_names_matched"] = ""
         return result
 
     try:
         matches = yara_rules.match(file_path)
         matched_labels = set()
-        matched_rule_names = []  # Rule name that Match (WIP)
+        matched_rule_names = []  # ← nama-nama rule yang match
         yara_match_count = len(matches)
 
-        # get the rule name that match (WIP)
         for match in matches:
-            matched_rule_names.append(match.rule)  
+            matched_rule_names.append(match.rule)  # ← ambil nama rule-nya
             namespace = match.namespace
             if namespace in YARA_LABEL_MAPPING:
                 matched_labels.add(YARA_LABEL_MAPPING[namespace])
@@ -68,14 +66,12 @@ def scan_with_yara(file_path, yara_rules):
             result[label] = 1 if label in matched_labels else 0
 
         result["yara_match_count"] = yara_match_count
-        result["yara_rule_names_matched"] = ", ".join(matched_rule_names)
         return result
 
     except Exception as e:
         print(f"[YARA Error] {file_path}: {e}")
         result = {label: 0 for label in YARA_LABEL_MAPPING.values()}
         result["yara_match_count"] = 0
-        result["yara_rule_names_matched"] = ""
         return result
 
 def extract_capa_capabilities(file_path, capa_path="capa.exe", timeout_sec=60): #WIP
@@ -118,7 +114,7 @@ def extract_capa_capabilities(file_path, capa_path="capa.exe", timeout_sec=60): 
         print(f"[Error ] Capa: {e}")
         return "Error capa"
 
-def extract_blint_findings(file_path, blint_path="blint", timeout_sec=60): #WIP
+def extract_blint_findings(file_path, blint_path="blint.exe", timeout_sec=60): #WIP
     try:
         result = subprocess.run(
             [blint_path, "sbom", "--stdout", "-i", file_path],
@@ -160,18 +156,62 @@ def extract_blint_findings(file_path, blint_path="blint", timeout_sec=60): #WIP
     except Exception as e:
         print(f"[Error] blint: {e} , try to run blint manually and see if blint has errors")
         return "Blint Error"
+    
+def extract_sigcheck_info(file_path, sigcheck_path="sigcheck.exe", timeout_sec=30):
+    try:
+        result = subprocess.run(
+            [sigcheck_path, "-nobanner", file_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            shell=False,
+            timeout=timeout_sec,
+            encoding="utf-8",
+            errors="ignore"
+        )
 
-def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path=None):
+        output = result.stdout
+        lines = output.splitlines()
+        verified = publisher = company = "n/a"
+
+        for line in lines:
+            line_stripped = line.strip()
+            if line_stripped.startswith("Verified:"):
+                verified = line_stripped.split(":", 1)[1].strip()
+            elif line_stripped.startswith("Publisher:"):
+                publisher = line_stripped.split(":", 1)[1].strip()
+            elif line_stripped.startswith("Company:"):
+                company = line_stripped.split(":", 1)[1].strip()
+
+        is_signed = 1 if publisher.lower() != "n/a" or company.lower() != "n/a" else 0
+        is_cert_valid = 1 if verified.lower().startswith("signed") and is_signed else 0
+
+        return {
+            "is_signed": is_signed,
+            "is_cert_valid": is_cert_valid
+        }
+
+    except subprocess.TimeoutExpired:
+        print(f"[Timeout] Skipping {file_path} (sigcheck stuck more than {timeout_sec}s)")
+        return {
+            "is_signed": 0,
+            "is_cert_valid": 0
+        }
+    except Exception as e:
+        print(f"[Error] sigcheck: {e}")
+        return {
+            "is_signed": 0,
+            "is_cert_valid": 0
+        }
+
+def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path=None, sigcheck_path=None):
     try:
         pe = pefile.PE(file_path)
         features = {
-            "file_size": os.path.getsize(file_path),
+            "label": label,
             "number_of_sections": len(pe.sections),
             "entry_point": pe.OPTIONAL_HEADER.AddressOfEntryPoint,
-            "image_base": pe.OPTIONAL_HEADER.ImageBase,
-            "subsystem": pe.OPTIONAL_HEADER.Subsystem,
             "dll_characteristics": pe.OPTIONAL_HEADER.DllCharacteristics,
-            "label": label,
         }
 
         if yara_rules:
@@ -183,31 +223,46 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
 
         if blint_path:
             features["blint_findings"] = extract_blint_findings(file_path, blint_path)
+        
+        if sigcheck_path:
+            features.update(extract_sigcheck_info(file_path, sigcheck_path))
 
         section_names = [section.Name.decode("utf-8", errors="ignore").strip('\x00') for section in pe.sections]
         unique_section_count = sum(1 for name in section_names if name not in COMMON_SECTION_NAMES)
         section_entropies = [section.get_entropy() for section in pe.sections]
+        raw_sizes = [section.SizeOfRawData for section in pe.sections]
+        virtual_sizes = [section.Misc_VirtualSize for section in pe.sections]
 
         features["unique_section_names"] = unique_section_count
-        features["section_entropies"] = ", ".join(map(str, section_entropies))
         features["max_entropy"] = max(section_entropies) if section_entropies else 0
         features["min_entropy"] = min(section_entropies) if section_entropies else 0
         features["mean_entropy"] = sum(section_entropies) / len(section_entropies) if section_entropies else 0
+
+        features["SectionsMinRawsize"] = min(raw_sizes) if raw_sizes else 0
+        features["SectionMaxRawsize"] = max(raw_sizes) if raw_sizes else 0
+        features["SectionsMeanRawsize"] = sum(raw_sizes) / len(raw_sizes) if raw_sizes else 0
+
+        features["SectionsMinVirtualsize"] = min(virtual_sizes) if virtual_sizes else 0
+        features["SectionMaxVirtualsize"] = max(virtual_sizes) if virtual_sizes else 0
+        features["SectionsMeanVirtualsize"] = sum(virtual_sizes) / len(virtual_sizes) if virtual_sizes else 0
 
         imported_dlls = []
         imported_functions = []
         if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
             for entry in pe.DIRECTORY_ENTRY_IMPORT:
                 imported_dlls.append(entry.dll.decode(errors='ignore'))
+                for imp in entry.imports:
+                    if imp.name:
+                        imported_functions.append(imp.name.decode(errors='ignore'))
 
         features["imported_dll_count"] = len(imported_dlls)
         features["imported_function_count"] = len(imported_functions)
-        features["imported_dlls"] = ", ".join(imported_dlls)
 
         exported_functions = []
         if hasattr(pe, 'DIRECTORY_ENTRY_EXPORT'):
             for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols:
-                exported_functions.append(exp.name.decode(errors='ignore'))
+                if exp.name:
+                    exported_functions.append(exp.name.decode(errors='ignore'))
 
         features["exported_function_count"] = len(exported_functions)
 
@@ -218,14 +273,15 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
         return None
 
 #Add your Custom File Extension here
-def process_directory(directory, yara_rules, label, capa_path, blint_path):
+def process_directory(directory, yara_rules, label, capa_path, blint_path, sigcheck_path):
     data = []
     if directory and os.path.isdir(directory):
         file_list = [f for f in os.listdir(directory) if f.endswith((".exe", ".EXE", ".dll", ".DLL", ".ransom", ".malware", ".mal", ".virus",))]
         for file_name in tqdm(file_list, desc=f"Processing {label} files"):
             file_path = os.path.join(directory, file_name)
             print(f" Extracting: {file_name}")
-            features = extract_pe_features(file_path, yara_rules, label, capa_path, blint_path)
+            
+            features = extract_pe_features(file_path, yara_rules, label, capa_path, blint_path, sigcheck_path)
             if features:
                 data.append(features)
     return data
@@ -238,6 +294,7 @@ if __name__ == "__main__":
     parser.add_argument("-output", help="Define CSV filename (Default: output.csv)", default="output.csv")
     parser.add_argument("--yara_rules", help="YARA rules Directory (Optional)", default=None)
     parser.add_argument("--capa", nargs="?", const="default", help="Path to capa.exe (If used without value, uses ./capa.exe)")
+    parser.add_argument("--sigcheck", nargs="?", const="default", help="Path to sigcheck.exe (If used without value, uses ./sigcheck.exe)")
     parser.add_argument("--blint", nargs="?", const="default", help="Path to blint.exe (If used without value, uses ./blint.exe)")
 
     args = parser.parse_args()
@@ -266,18 +323,26 @@ if __name__ == "__main__":
     else:
         print("[INFO] Yara is disabled.")
 
+    if args.sigcheck == "default":
+        args.sigcheck = os.path.join(os.getcwd(), "sigcheck.exe")
+        print("[INFO] Sigcheck is enabled. Path:", args.sigcheck)
+    elif args.sigcheck is None:
+        print("[INFO] Sigcheck is Disabled.")
+    else:
+        print(f"[INFO] Using custom sigcheck path: {args.sigcheck}")
+
     yara_rules, yara_file_map = load_yara_rules(args.yara_rules)
 
     #Change the label here
-    ransomware_data = process_directory(args.ransomware, yara_rules, "ransomware", args.capa, args.blint)
-    benign_data = process_directory(args.benign, yara_rules, "benign", args.capa, args.blint)
+    ransomware_data = process_directory(args.ransomware, yara_rules, "ransomware", args.capa, args.blint, args.sigcheck)
+    benign_data = process_directory(args.benign, yara_rules, "benign", args.capa, args.blint, args.sigcheck)
 
     #Output Process
     df = pd.DataFrame(ransomware_data + benign_data)
 
-    cols = ['label'] + [col for col in df.columns if col != 'label']
+    cols = [col for col in df.columns]
     df = df[cols]
-    drop_if_all_values = ["No match", "No blint findings", "No capa match", "No YARA rules provided"]
+    drop_if_all_values = ["No match", "No blint findings", "No capa match", "No YARA rules provided", "Blint Error", "Sigcheck Error"]
 
     for col in df.columns:
         if df[col].nunique() == 1 and df[col].iloc[0] in drop_if_all_values:

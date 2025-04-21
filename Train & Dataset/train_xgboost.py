@@ -16,7 +16,7 @@ df['label'] = df['label'].map({'ransomware': 1, 'benign': 0})
 drop_cols = df.select_dtypes(include=['object']).columns.tolist()
 df = df.drop(columns=drop_cols)
 
-# === Add binary noise to is_signed & is_cert_valid (incase of malware sample that dont have a valid cert) ===
+# === Add binary noise to is_signed & is_cert_valid (incase of 50% malware sample dont have a valid sign) ===
 rng = np.random.default_rng(seed=42)
 
 def add_signed_noise(df, column_name, flip_prob=0.25, rng=None):
@@ -25,8 +25,17 @@ def add_signed_noise(df, column_name, flip_prob=0.25, rng=None):
         df.loc[flip_mask, column_name] = 1 - df.loc[flip_mask, column_name]
     return df
 
+def add_cert_valid_noise(df, signed_column='is_signed', cert_column='is_cert_valid', rng=None):
+    if signed_column in df.columns and cert_column in df.columns and rng is not None:
+        for idx, signed in df[signed_column].items():
+            if signed == 1:
+                df.at[idx, cert_column] = rng.integers(0, 2)  # random 0 or 1
+            else:
+                df.at[idx, cert_column] = 0  # force 0 if not signed
+    return df
+
 df = add_signed_noise(df, 'is_signed', flip_prob=0.25, rng=rng)
-df = add_signed_noise(df, 'is_cert_valid', flip_prob=0.25, rng=rng)
+df = add_cert_valid_noise(df, signed_column='is_signed', cert_column='is_cert_valid', rng=rng)
 
 # === Separate features and labels ===
 X = df.drop(columns=['label'])
@@ -40,16 +49,16 @@ X_train, X_test, y_train, y_test = train_test_split(
 # === Training model ===
 model = XGBClassifier(
     eval_metric='logloss',
-    learning_rate=0.05,
-    max_depth=4,
+    learning_rate=0.06,
+    max_depth=5,
     n_estimators=500,
     subsample=0.8,
     colsample_bytree=0.8,
-    gamma=2.5,              
-    reg_lambda=5,        
-    reg_alpha=5,          
+    gamma=0.5,              
+    reg_lambda=0.5,        
+    reg_alpha=0.5,          
     random_state=42,
-    early_stopping_rounds=10,
+    early_stopping_rounds=15,
 )
 model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
 

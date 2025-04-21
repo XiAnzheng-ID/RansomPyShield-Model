@@ -34,7 +34,7 @@ def interpret_probability(probability, ransomware_threshold=0.70, gray_threshold
     else:
         return "Benign"
 
-def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.exe", use_sigcheck=False, sigcheck_path="sigcheck.exe"):
+def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.exe", use_sigcheck=False, sigcheck_path="sigcheck.exe", add_noise=False):
     # 1. Ekstraksi fitur PE standar
     features = extract_pe_features(file_path, yara_rules, label="unknown")
     if not features:
@@ -55,6 +55,21 @@ def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.e
         sigcheck_result = extract_sigcheck_info(file_path, sigcheck_path)
         features['is_signed'] = sigcheck_result.get('is_signed', 0)
         features['is_cert_valid'] = sigcheck_result.get('is_cert_valid', 0)
+
+        # Inject noise if enabled
+        if add_noise:
+            rng = np.random.default_rng(seed=42)
+
+            # is_signed
+            flip = rng.random()
+            if flip < 1:
+                features['is_signed'] = 1 - features['is_signed'] 
+
+            # Noise is_cert_valid if is_signed = 1
+            if features['is_signed'] == 1:
+                features['is_cert_valid'] = rng.integers(0, 2)  # 0 or 1
+            else:
+                features['is_cert_valid'] = 0
 
     # 3. Buat DataFrame dan pastikan semua fitur model tersedia
     df = pd.DataFrame([features])
@@ -99,7 +114,8 @@ def main():
     parser.add_argument("--yara_rules", required=True, help="yara folder")
     parser.add_argument("--sigcheck", action="store_true", help="sign scan")
     parser.add_argument("--blint", action="store_true", help="blint scan")
-    parser.add_argument("--label", type=str, choices=["benign", "ransomware"], help="Label ground truth untuk folder (benign/ransomware)")
+    parser.add_argument("--label", type=str, choices=["benign", "ransomware"], help="Label for folder testing (accept: benign/ransomware)")
+    parser.add_argument("--add_noise", action="store_true", help="Inject noise into signature features")
     args = parser.parse_args()
 
     if not args.file and not args.folder:
@@ -139,6 +155,7 @@ def main():
                             use_blint=args.blint,
                             blint_path=args.blint_path if 'blint_path' in args else "blint",
                             use_sigcheck=args.sigcheck,
+                            add_noise=args.add_noise
                         )
                     if result is None:
                         continue
