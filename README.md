@@ -24,12 +24,12 @@ just run it as a normal script
 * run.py (for running the model and test the 
 accuracy)
 ```bash
-run.py --folder "E:\Dataset\Random\Malware" --model "ransompyshield.pkl" --yara_rules "D:\Kuliah\Code\Skripsi\Rule --blint --label benign/ransomware
+run.py --folder/--files "/Target/Folder/Files" --model "ransompyshield.pkl" --yara_rules "Path/to/Rules" --blint --label "benign/ransomware"
 ```
 
 # Proof & Information
 This model as of now is tested against 100+ real Ransomware Sample and 100+ benign file 
-Trained with 1000+ real Ransomware Sample and Benign File(2000 sample in total)
+Trained with 2000+ real Ransomware Sample and Benign File(almost 3000 sample in total)
 Do remember that some file were failed to be processed so it can be less (check the dataset)
 These Proof are old (I might update it later - when i think the model is ready)
 * Random Malware proof (Old)
