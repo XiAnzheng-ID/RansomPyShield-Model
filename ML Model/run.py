@@ -1,24 +1,22 @@
 import argparse
 import pickle
+import os
+import random
 import pandas as pd
 import numpy as np
-import os
 from extract import extract_pe_features, load_yara_rules, extract_blint_findings, extract_sigcheck_info
 
 MODEL_FEATURES = [
     'number_of_sections','entry_point','dll_characteristics','contain_crypto_address','is_packed',
     'ransomware_command_indicator','suspicious_technique_indicator','contain_tor_link','using_encryption_library','ransomware_string_indicator',
-    'suspicious_entropy_and_indicator','Check_for_Debugger','yara_match_count','is_signed','is_cert_valid',
-    'unique_section_names','max_entropy','min_entropy','mean_entropy','SectionsMinRawsize',
-    'SectionMaxRawsize','SectionsMeanRawsize','SectionsMinVirtualsize','SectionMaxVirtualsize','SectionsMeanVirtualsize',
-    'imported_dll_count','imported_function_count','exported_function_count',
-
-    #blint
-    'blint_guard_cf','blint_high_entropy_va','blint_no_bind','blint_no_seh','blint_nx_compat'
+    'suspicious_entropy_and_indicator','Check_for_Debugger','ConventionEngine_indicator','yara_match_count','unique_section_names',
+    'max_entropy','min_entropy','mean_entropy','SectionsMinRawsize','SectionMaxRawsize',
+    'SectionsMeanRawsize','SectionsMinVirtualsize','SectionMaxVirtualsize','SectionsMeanVirtualsize','imported_dll_count',
+    'imported_function_count','exported_function_count'
 ]
 
 # Scanned Extension
-ALLOWED_EXTENSIONS = ('.exe', '.EXE', '.ransom', '.malware', '.mal', '.virus')
+ALLOWED_EXTENSIONS = ('.exe', '.EXE', 'dll', '.DLL', '.pyd', '.PYD', '.ransom', '.malware', '.mal', '.virus')
 
 def parse_blint_flags(blint_output):
     # Blint output string ke set flag
@@ -34,7 +32,7 @@ def interpret_probability(probability, ransomware_threshold=0.70, gray_threshold
     else:
         return "Benign"
 
-def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.exe", use_sigcheck=False, sigcheck_path="sigcheck.exe", add_noise=False):
+def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.exe", use_sigcheck=False, sigcheck_path="sigcheck.exe", noise_features=None):
     # 1. Ekstraksi fitur PE standar
     features = extract_pe_features(file_path, yara_rules, label="unknown")
     if not features:
@@ -46,7 +44,9 @@ def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.e
         blint_flags = parse_blint_flags(blint_raw)
 
         blint_possible_flags = [
-            "GUARD_CF", "HIGH_ENTROPY_VA", "NO_BIND", "NO_SEH", "NX_COMPAT", 
+            'BYTES_REVERSED_HI','BYTES_REVERSED_LO','DEBUG_STRIPPED','DYNAMIC_BASE','GUARD_CF',
+            'HIGH_ENTROPY_VA','LARGE_ADDRESS_AWARE','LINE_NUMS_STRIPPED','LOCAL_SYMS_STRIPPED','NEED_32BIT_MACHINE',
+            'NO_SEH','NX_COMPAT','RELOCS_STRIPPED','TERMINAL_SERVER_AWARE'
         ]
         for flag in blint_possible_flags:
             features[f'blint_{flag.lower()}'] = 1 if flag in blint_flags else 0
@@ -56,20 +56,20 @@ def scan_file(file_path, model, yara_rules, use_blint=False, blint_path="blint.e
         features['is_signed'] = sigcheck_result.get('is_signed', 0)
         features['is_cert_valid'] = sigcheck_result.get('is_cert_valid', 0)
 
-        # Inject noise if enabled
-        if add_noise:
-            rng = np.random.default_rng(seed=42)
-
-            # is_signed
-            flip = rng.random()
-            if flip < 1:
-                features['is_signed'] = 1 - features['is_signed'] 
-
-            # Noise is_cert_valid if is_signed = 1
-            if features['is_signed'] == 1:
-                features['is_cert_valid'] = rng.integers(0, 2)  # 0 or 1
+    if noise_features:
+        for feat in noise_features:
+            if feat in features:
+                if isinstance(features[feat], (int, float)):
+                    if random.random() < 0.5:  # 50% prob
+                        original = features[feat]
+                        features[feat] = 1 if features[feat] == 0 else 0
+                        print(f"[NOISE] Flipped {feat}: {original} -> {features[feat]}")
+                    else:
+                        print(f"[NOISE] Skipped flipping {feat}")
+                else:
+                    print(f"[NOISE] Cannot flip non-numeric feature: {feat}")
             else:
-                features['is_cert_valid'] = 0
+                print(f"[NOISE] Feature '{feat}' not found in extracted features.")
 
     # 3. Buat DataFrame dan pastikan semua fitur model tersedia
     df = pd.DataFrame([features])
@@ -114,13 +114,18 @@ def main():
     parser.add_argument("--yara_rules", required=True, help="yara folder")
     parser.add_argument("--sigcheck", action="store_true", help="sign scan")
     parser.add_argument("--blint", action="store_true", help="blint scan")
-    parser.add_argument("--label", type=str, choices=["benign", "ransomware"], help="Label for folder testing (accept: benign/ransomware)")
-    parser.add_argument("--add_noise", action="store_true", help="Inject noise into signature features")
+    parser.add_argument("--label", type=str, choices=["benign", "ransomware"], help="Label ground truth untuk folder (benign/ransomware)")
+    parser.add_argument("--add_noise", type=str, help="Fitur yang ingin di-flip, pisahkan dengan koma (contoh: is_packed,blint_no_seh,is_signed)")
     args = parser.parse_args()
 
     if not args.file and not args.folder:
         print("[ERROR] Please provide either --file or --folder argument")
         return
+    
+    noise_features = None
+    if args.add_noise:
+        noise_features = [feat.strip() for feat in args.add_noise.split(",") if feat.strip()]
+        print(f"[INFO] Noise will be added to features: {noise_features}")
 
     # Load model
     with open(args.model, 'rb') as f:
@@ -132,7 +137,16 @@ def main():
 
     # --file 
     if args.file:
-        scan_file(args.file, model, yara_rules, use_blint=args.blint)
+        scan_file(
+            args.file,
+            model,
+            yara_rules,
+            use_blint=args.blint,
+            blint_path=args.blint_path if hasattr(args, 'blint_path') else "blint",
+            use_sigcheck=args.sigcheck,
+            sigcheck_path="sigcheck.exe",
+            noise_features=noise_features
+        )
 
     if args.folder:
         print(f"[INFO] Scanning folder: {args.folder}")
@@ -149,14 +163,15 @@ def main():
                 if filename.lower().endswith(ALLOWED_EXTENSIONS):
                     full_path = os.path.join(root, filename)
                     result = scan_file(
-                            full_path,
-                            model,
-                            yara_rules,
-                            use_blint=args.blint,
-                            blint_path=args.blint_path if 'blint_path' in args else "blint",
-                            use_sigcheck=args.sigcheck,
-                            add_noise=args.add_noise
-                        )
+                        full_path,
+                        model,
+                        yara_rules,
+                        use_blint=args.blint,
+                        blint_path=args.blint_path if hasattr(args, 'blint_path') else "blint",
+                        use_sigcheck=args.sigcheck,
+                        sigcheck_path="sigcheck.exe",
+                        noise_features=noise_features
+                    )
                     if result is None:
                         continue
 
