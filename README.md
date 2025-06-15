@@ -1,5 +1,5 @@
 # RansomPyShield-Model
-Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint for its indicator , not just static PE Information from lief/pefile/other
+Whats make this ML Model Different than some public and free model out there? this model integrate Yara, CAPA(WIP-Experimental), blint(WIP-Experimental) for its indicator , not just static PE Information from lief/pefile/other
 
 Why?? Some Malware can spoof , hide , encrypt , obfus most of their data making extracting them hard, some Model or even bad AV can be bypassed or be fooled using this way
 
@@ -29,7 +29,7 @@ run.py --folder/--files "/Target/Folder/Files" --model "ransompyshield.pkl" --ya
 
 # Proof & Information
 This model as of now is tested against 100+ real Ransomware Sample and 100+ benign file 
-Trained with 2000+ real Ransomware Sample and Benign File(almost 3000 sample in total)
+Trained with 2000+ real Ransomware Sample and Benign File(almost 3000 sample in total from Malwarebazaar and Windows System/Program files Directory)
 Do remember that some file were failed to be processed so it can be less (check the dataset)
 These Proof are old (I might update it later - when i think the model is ready)
 * Random Malware proof (Old)
