@@ -15,10 +15,11 @@ rule RANSOMWARE {
 		$c = "PartialFileCrypter"
 		$d = "ransomware" 
 		$e = "infected" 
-        $i = "victim" 
-        $l = "bitcoin" 
-        $m = "monero" 
-        $n = "cryptocurrency" 
+		$f = "encrypted"
+        $g = "victim" 
+        $h = "bitcoin" 
+        $i = "monero" 
+        $j = "cryptocurrency" 
 	condition:
 		any of them
 }

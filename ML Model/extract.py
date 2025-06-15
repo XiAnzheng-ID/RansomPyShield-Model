@@ -28,6 +28,10 @@ YARA_LABEL_MAPPING = {
     "RANSOMWARE_Custom.yar": "ransomware_string_indicator",
     "Sus_Obf_Enc_Spoof_Hide_PE.yar": "suspicious_entropy_and_indicator",
     "AntiDebug.yar": "Check_for_Debugger",
+    "ConventionEngine.yar": "ConventionEngine_indicator",
+    "command_and_control.yar" : "C2_indicator",
+    "Sus_CMD_Powershell_Usage.yar" : "cmd_powershell_usage_indicator",
+    "yaraify.yar" : "yaraify_indicator",
 }
 
 def load_yara_rules(yara_dir):
