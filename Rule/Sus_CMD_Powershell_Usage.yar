@@ -5,7 +5,7 @@ rule Sus_CMD_Powershell_Usage
         source_url = "https://github.com/XiAnzheng-ID/RansomPyShield-Antiransomware"
         description = "May Contain(Obfuscated or no) Powershell or CMD Command that can be abused by threat actor(can create FP)"
         date = "2025-06-01"
-        updated = "2025-06-01"
+        updated = "2025-06-21"
         yarahub_license = "CC0 1.0"
         yarahub_uuid = "68ec99c5-f2a0-4da7-93d9-58bf7cec9880"
         yarahub_rule_matching_tlp = "TLP:WHITE"
@@ -59,13 +59,16 @@ rule Sus_CMD_Powershell_Usage
         $util13 = /\[reflection\.assembly\]::load\s*/ ascii wide nocase
         $util14 = /start-process\s*-windowstyle\s*hidden/ ascii wide nocase
 
-        // Probably a Downloader
+        // Probably a Downloader or Hidden Window
         $powershell1 = "Powershell" ascii wide nocase
         $powershell2 = "Powershell.exe" ascii wide nocase
         $download1 = "New-Object Net.WebClient" ascii wide nocase
         $download2 = "Invoke-WebRequest" ascii wide nocase
         $download3 = "DownloadString" ascii wide nocase
         $download4 = "DownloadFile" ascii wide nocase
+		$hidden1 = "-WindowStyle Hidden" ascii wide nocase
+		$hidden2 = "Hidden -Command" ascii wide nocase
+		
 
         //Contain Python Execution????
         $py1 = /https?:\/\/www\.python\.org\/ftp\/python\/[^\s]+/ ascii wide nocase
@@ -83,7 +86,7 @@ rule Sus_CMD_Powershell_Usage
 
     condition:
         (any of ($obf*) or any of ($ps*) or any of ($rev*) or any of ($py*))
-        or ((any of ($powershell*) and any of ($download*)))
+        or ((any of ($powershell*) and any of ($download*)) or any of ($hidden*))
         or (2 of ($def*))
         or (2 of ($util*))
 }

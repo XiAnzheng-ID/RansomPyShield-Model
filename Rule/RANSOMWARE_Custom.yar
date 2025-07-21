@@ -20,6 +20,10 @@ rule RANSOMWARE {
         $h = "bitcoin" 
         $i = "monero" 
         $j = "cryptocurrency" 
+        $b64_encrypted = "ZW5jcnlwdGVk" ascii
+        $hex_encrypted = { 65 6E 63 72 79 70 74 65 64 }
+        $unicode_encrypted = "e\x00n\x00c\x00r\x00y\x00p\x00t\x00e\x00d\x00" wide
+
 	condition:
 		any of them
 }

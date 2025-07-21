@@ -16,20 +16,6 @@ rule RansomPyShield_Antiransomware {
         yarahub_reference_md5 = "16f76e17d64f5ee805031ddf9f862f59"
 
     strings:
-		// Commonly used by ransomware
-        $tor1 = ".onion" nocase wide ascii
-        $tor2 = "torproject.org" nocase wide ascii
-		$string1 = "encrypted" nocase wide ascii
-        $string2 = "decrypted" nocase wide ascii
-        $string3 = "infected" nocase wide ascii
-        $string4 = "locked" nocase wide ascii
-        $string5 = "victim" nocase wide ascii
-        $string6 = "encrypt" nocase wide ascii
-        $string7 = "decrypt" nocase wide ascii
-        $string8 = "bitcoin" nocase wide ascii
-        $string9 = "monero" nocase wide ascii
-        $string10 = "cryptocurrency" nocase wide ascii
-
         // Detect DotNet Namespace Cryptography Function
         $dotnet1 = "AES_Encrypt" wide ascii
         $dotnet2 = "RijndaelManaged"  wide ascii
@@ -45,7 +31,7 @@ rule RansomPyShield_Antiransomware {
         $dotnet12 = "AsymmetricAlgorithm" wide ascii
 
     condition:
-        (any of ($tor*)) or (any of ($string*))
+        any of them
         
         // Encryption Function Call (Can create FP)
 		or (pe.imports("advapi32.dll", "CryptImportKey")) 
