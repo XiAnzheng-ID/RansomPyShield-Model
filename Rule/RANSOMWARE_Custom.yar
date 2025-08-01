@@ -22,7 +22,8 @@ rule RANSOMWARE {
         $j = "cryptocurrency" 
         $b64_encrypted = "ZW5jcnlwdGVk" ascii
         $hex_encrypted = { 65 6E 63 72 79 70 74 65 64 }
-        $unicode_encrypted = "e\x00n\x00c\x00r\x00y\x00p\x00t\x00e\x00d\x00" wide
+        $unicode_encrypted = "e\x00n\x00c\x00r\x00y\x00p\x00t\x00e\x00d\x00" wide nocase
+		$unicode_be = "\x00e\x00n\x00c\x00r\x00y\x00p\x00t\x00e\x00d" wide nocase
 
 	condition:
 		any of them

@@ -280,7 +280,7 @@ def extract_pe_features(file_path, yara_rules, label, capa_path=None, blint_path
 def process_directory(directory, yara_rules, label, capa_path, blint_path, sigcheck_path):
     data = []
     if directory and os.path.isdir(directory):
-        file_list = [f for f in os.listdir(directory) if f.endswith((".exe", ".EXE", ".dll", ".DLL", ".ransom", ".malware", ".mal", ".virus",))]
+        file_list = [f for f in os.listdir(directory) if f.endswith((".exe", ".EXE", ".dll", ".DLL", ".msi", ".MSI", ".ransom", ".malware", ".mal", ".virus",))]
         for file_name in tqdm(file_list, desc=f"Processing {label} files"):
             file_path = os.path.join(directory, file_name)
             print(f" Extracting: {file_name}")

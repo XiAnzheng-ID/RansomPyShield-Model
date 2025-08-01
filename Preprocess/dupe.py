@@ -1,15 +1,22 @@
 import pandas as pd
 
-df = pd.read_csv("output.csv")  # Ganti dengan nama file dataset kamu
+# Load dataset
+df = pd.read_csv("output.csv")
 
-# Search for duplicates
+# Cari baris yang sepenuhnya duplikat (termasuk label)
 duplicates = df[df.duplicated()]
+print("Total duplikat (fitur + label):", len(duplicates))
 
-# Show Duplicate uncomment if you need it
-#print("Jumlah data duplikat:", len(duplicates))
-#print(duplicates)
+# Hitung jumlah duplikat yang akan dihapus per label
+deleted_per_label = duplicates['label'].value_counts()
 
-# Delete Duplicates
+# Hapus duplikat
 df_no_duplicates = df.drop_duplicates()
-print ("Total Deleted Duplicates data:", len(df_no_duplicates))
+
+# Info
+print("Total data setelah penghapusan:", len(df_no_duplicates))
+print("\nJumlah duplikat yang dihapus per label:")
+print(deleted_per_label)
+
+# Simpan hasil
 df_no_duplicates.to_csv("output_no-dupe.csv", index=False)

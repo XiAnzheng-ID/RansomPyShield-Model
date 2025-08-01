@@ -3,27 +3,54 @@ import pickle
 import os
 import random
 import pandas as pd
-import numpy as np
 from extract import extract_pe_features, load_yara_rules
 
 MODEL_FEATURES = [
-    'number_of_sections','entry_point','dll_characteristics','contain_crypto_address','is_packed',
-    'ransomware_command_indicator','suspicious_technique_indicator','contain_tor_link','using_encryption_library','ransomware_string_indicator',
-    'suspicious_entropy_and_indicator','Check_for_Debugger','ConventionEngine_indicator','C2_indicator','cmd_powershell_usage_indicator',
-    'yaraify_indicator','yara_match_count','unique_section_names','max_entropy','min_entropy',
-    'mean_entropy','SectionsMinRawsize','SectionMaxRawsize','SectionsMeanRawsize','SectionsMinVirtualsize',
-    'SectionMaxVirtualsize','SectionsMeanVirtualsize','imported_dll_count','imported_function_count','exported_function_count'
+    'number_of_sections', 
+    'entry_point', 
+    'dll_characteristics', 
+    'Check_for_Debugger', 
+    'C2_indicator', 
+    'ConventionEngine_indicator', 
+    'contain_crypto_address', 
+    'suspicious_imphash', 
+    'is_packed', 
+    'ransomware_command_indicator', 
+    'suspicious_technique_indicator', 
+    'contain_tor_link', 
+    'using_encryption_library', 
+    'ransomware_string_indicator', 
+    'cmd_powershell_usage_indicator', 
+    'suspicious_entropy_and_indicator', 
+    'yaraify_indicator', 
+    'yara_match_count', 
+    'unique_section_names', 
+    'max_entropy', 
+    'min_entropy', 
+    'mean_entropy', 
+    'SectionsMinRawsize', 
+    'SectionMaxRawsize', 
+    'SectionsMeanRawsize', 
+    'SectionsMinVirtualsize', 
+    'SectionMaxVirtualsize', 
+    'SectionsMeanVirtualsize', 
+    'imported_dll_count', 
+    'imported_function_count', 
+    'exported_function_count'
 ]
 
 # Scanned Extension
 ALLOWED_EXTENSIONS = ('.exe', '.EXE', '.dll', '.DLL', '.pyd', '.PYD', '.ransom', '.malware', '.mal', '.virus')
 
-def interpret_probability(probability, ransomware_threshold=0.70, gray_threshold=0.50):
-    prob_ransomware = probability[1]
-    if prob_ransomware >= ransomware_threshold:
-        return "Ransomware/Malware"
-    elif prob_ransomware >= gray_threshold:
+def interpret_probability(probability, diff_threshold=0.15):
+    prob_benign = probability[0]
+    prob_ransom = probability[1]
+    diff = abs(prob_benign - prob_ransom)
+
+    if diff <= diff_threshold:
         return "Unknown/Suspicious"
+    elif prob_ransom > prob_benign:
+        return "Ransomware/Malware"
     else:
         return "Benign"
 

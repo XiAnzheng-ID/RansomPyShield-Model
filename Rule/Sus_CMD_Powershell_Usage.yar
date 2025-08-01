@@ -29,6 +29,10 @@ rule Sus_CMD_Powershell_Usage
         $obf4 = /\[char\]\d+/ ascii wide nocase  
         $obf5 = /fromcharcode/ ascii wide nocase
         $obf8 = /[a-z]{3,10}\:\/\/[a-z0-9\.\/\=\%\:\_]{30,}/ ascii wide nocase
+		$obf9 = " -enc " ascii wide nocase
+		$obf10 = " -EncodedCommand " ascii wide nocase
+		$obf11 = " /enc " ascii wide nocase
+		$obf12 = " /EncodedCommand " ascii wide nocase
 
         //Windef
         $def1= "MpPreference" ascii wide nocase
@@ -51,13 +55,14 @@ rule Sus_CMD_Powershell_Usage
         $util5 = "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v DisableTaskMgr" ascii wide nocase
         $util6 = "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v DisableCMD" ascii wide nocase
         $util7 = "reg add HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System /v DisableRegistryTools" ascii wide nocase
-        $util8 = "taskkill /f" ascii wide nocase
-        $util9 = "explorer.exe" ascii wide nocase
-        $util10 = "rundll32" ascii wide nocase
-        $util11 = /(exe\.|\.exe)[a-z]{5,10}\./ ascii wide nocase
-        $util12 = /exe\.[a-z]{6,10}/ ascii wide nocase
-        $util13 = /\[reflection\.assembly\]::load\s*/ ascii wide nocase
-        $util14 = /start-process\s*-windowstyle\s*hidden/ ascii wide nocase
+		$util8 = "taskkill /f" ascii wide nocase
+		$util9 = "netsh.exe" ascii wide nocase
+        $util10 = "explorer.exe" ascii wide nocase
+        $util11 = "rundll32" ascii wide nocase
+        $util12 = /(exe\.|\.exe)[a-z]{5,10}\./ ascii wide nocase
+        $util13 = /exe\.[a-z]{6,10}/ ascii wide nocase
+        $util14 = /\[reflection\.assembly\]::load\s*/ ascii wide nocase
+        $util15 = /start-process\s*-windowstyle\s*hidden/ ascii wide nocase
 
         // Probably a Downloader or Hidden Window
         $powershell1 = "Powershell" ascii wide nocase
@@ -68,7 +73,7 @@ rule Sus_CMD_Powershell_Usage
         $download4 = "DownloadFile" ascii wide nocase
 		$hidden1 = "-WindowStyle Hidden" ascii wide nocase
 		$hidden2 = "Hidden -Command" ascii wide nocase
-		
+
 
         //Contain Python Execution????
         $py1 = /https?:\/\/www\.python\.org\/ftp\/python\/[^\s]+/ ascii wide nocase
