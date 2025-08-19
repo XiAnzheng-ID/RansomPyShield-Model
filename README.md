@@ -11,7 +11,7 @@ as a bonus this model also can detect some other random malware because how Rans
 
 so it doest have weakness? good question , it does, some threat actor can bypass it using some fileless attack vector eg:CMD/Powershell attack, which we need different approach not Static Identification
 
-# How to use?
+## How to use?
 * extract.py
 ```bash
 extract.py --ransomware "C:\path\to\sample" --benign "C:\path\to\benign" --yara_rules "C:\path\to\yara_rules" --blint "C:\path\to\blint.exe"
@@ -21,13 +21,15 @@ capa and blint is an optional argumen if you dont wanna use em as em still (WIP)
 * train.py
 just run it as a normal script
 
-* run.py (for running the model and test the 
-accuracy)
+* run.py (for running the model and test the accuracy)
 ```bash
-run.py --folder/--files "/Target/Folder/Files" --model "ransompyshield.pkl" --yara_rules "Path/to/Rules" --blint --label "benign/ransomware"
+run.py --folder/--files "/Target/Folder/Files" --model "ransompyshield.pkl" --yara_rules "Path/to/Rules" --label "benign/ransomware"
 ```
 
-# Proof & Information
+## Wanna try the model???:
+<a href="https://ransompyshield.streamlit.app/">RansomPyShield-Model</a>
+
+## Proof & Information
 This model as of now is tested against 100+ real Ransomware Sample and 100+ benign file 
 Trained with 2000+ real Ransomware Sample and Benign File(almost 3000 sample in total from Malwarebazaar and Windows System/Program files Directory)
 Do remember that some file were failed to be processed so it can be less (check the dataset)

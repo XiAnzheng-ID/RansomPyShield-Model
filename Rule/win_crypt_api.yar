@@ -29,6 +29,11 @@ rule use_windows_crypt_api {
         $dotnet11 = "RSAEncryptionPadding" wide ascii
         $dotnet12 = "AsymmetricAlgorithm" wide ascii
 
+        $golang1 = "crypto/md5" wide ascii
+        $golang2 = "crypto/rsa" wide ascii
+        $golang3 = "crypto/aes" wide ascii
+        $golang4 = "hash.Hash" wide ascii
+
         $import1 = "CryptImportKey" wide ascii
         $import2 = "CryptEncrypt" wide ascii
         $import3 = "CryptDecrypt" wide ascii
